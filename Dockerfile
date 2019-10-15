@@ -1,8 +1,7 @@
-FROM centos
+FROM sickp/centos-sshd:latest
 
-RUN dnf -y update
-RUN dnf -y install python3 python3-pip vim iputils
-RUN dnf -y install openssh-server
-RUN dnf clean all
+RUN yum -y install vim iputils
+RUN yum clean all
+ENV PATH=${PATH}:/usr/lib64
 
-CMD ['/usr/sbin/init']
+RUN echo 'root:1234' | chpasswd
