@@ -23,7 +23,7 @@ with open('Dockerfile', 'w') as dfile:
     #l03 = "RUN yum -y update"
     l04 = "RUN yum -y install vim iputils"
     l05 = "RUN yum clean all"
-    l06 = "ENV PATH=${PATH}:/usr/lib64" 
+    l06 = "ENV PATH=${PATH}:/usr/lib64"
     l07 = ""
     l08 = "RUN echo 'root:1234' | chpasswd"
     #l09 = "CMD echo '1234' | passwd --stdin root"
@@ -32,7 +32,7 @@ with open('Dockerfile', 'w') as dfile:
     print('-- Dockerfile created')
 
 Containers = len(sys.argv) # Count num of containers
-Nodes = str(sys.argv[1:]).strip('[]').replace(',', '').replace("'", "") # 
+Nodes = str(sys.argv[1:]).strip('[]').replace(',', '').replace("'", "") #
 print()
 print('Create master and nodes:')
 print('Nodes: ', Nodes)
