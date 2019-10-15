@@ -7,5 +7,5 @@ Else an img_node/ssh:centos is created and will be the skelaton of all the conta
 Python and Ansible are installed on the master container.
 Custom nodes are created from the img_node/ssh:centos image
 SSH keys are set to acess all nodes from the master
-# Ansible Playbook creates nginx services on all nodes (not ready)
-# Triggered by Travis-CI (not ready)
+- Ansible Playbook creates nginx services on all nodes (not ready)
+- Triggered by Travis-CI (not ready)
