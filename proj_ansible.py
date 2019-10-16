@@ -14,7 +14,7 @@ if del_containers != '':
     os.system('docker ps -a')
 
 # Delete all containers and images except img_master and img_node
-    os.system("docker ps -a | grep -v CONTAINER | cut -d' ' -f1 | xargs docker rm; for i in `docker images | grep -Ev 'img|sickp' | awk '{print $3}' | grep -v IMA > /dev/null`; do docker rmi $i; done")
+    os.system("docker ps -a | grep -v CONTAINER | cut -d' ' -f1 | xargs docker rm > /dev/null; for i in `docker images | grep -Ev 'img|sickp' | awk '{print $3}' | grep -v IMA > /dev/null`; do docker rmi $i; done")
 
 # Create Dockerfile
 with open('Dockerfile', 'w') as dfile:
@@ -40,9 +40,9 @@ for node in range(Containers):
     # Master container
     if node == 0:
         print()
-        print('master container')
+        print('master container:')
 
-        # Check if img_master image exists and run it as master if it does.
+        # Check if img_master image exists and run it as master if it does. Otherwise create from img_node.
         if os.popen('docker images | grep img_master > /dev/null && echo Yes').read().replace('\n', '') != 'Yes':
             # Build img_node with ssh image
             print()
@@ -52,26 +52,22 @@ for node in range(Containers):
             os.system('docker run -dP --name=master img_node/ssh:centos 2>logs/master_err.log 1>logs/master_out.log &')
             os.system('sleep 2')
 
+            # Install Python and pip on master
+            print()
+            print('-- Install Python, pip and Ansible on the master container')
+            os.system('docker exec -it master yum -y install epel-release python3 python3-pip sshpass')
+            os.system('docker exec -it master pip3 install --upgrade pip')
+            os.system('docker exec -it master pip3 install ansible')
+
+            # Create img_master image from the master if it is missing
+            print()
+            print('-- Creating img_master from master container')
+            os.system('docker commit master img_master/ssh:centos')
+
         else:
             print()
             print('-- Running master from img_master image')
-            print('docker run -dP --name=master img_master/ssh:centos 2>logs/master_err.log 1>logs/master_out.log &')
             os.system('docker run -dP --name=master img_master/ssh:centos 2>logs/master_err.log 1>logs/master_out.log &')
-
-        print()
-        os.system('docker images; docker ps -a')
-
-        # Install Python and pip on master
-        print()
-        print('-- Install Python, pip and Ansible on the master container')
-        os.system('docker exec -it master yum -y install epel-release python3 python3-pip sshpass')
-        os.system('docker exec -it master pip3 install --upgrade pip')
-        os.system('docker exec -it master pip3 install ansible')
-
-        # Create img_master image from the master if it is missing
-        print()
-        print('-- Creating img_master from master container')
-        os.system('docker commit master img_master/ssh:centos')
 
 
     # Nodes containers
@@ -82,19 +78,16 @@ for node in range(Containers):
         # Check if img_node image exists and run it if it does
         if os.popen('docker images | grep img_node > /dev/null && echo Yes').read().replace('\n', '') != 'Yes':
             # Build img_node image if it does not exists (due to the loop)
-            print()
             print('-- img_node image does not exist')
             print('-- Build img_node image')
             os.system('docker build -t img_node/ssh:centos .')
 
         # Run the img_node containers
-        print()
-        print('AAA')
         print('-- Running node ' + sys.argv[node] + ' from img_node image')
         os.system('docker run -dP --name=' + sys.argv[node] + ' img_node/ssh:centos 2>logs/' + sys.argv[node] + '_err.log 1>logs/' + sys.argv[node] + '_out.log &')
 
 # Get the master IP
-os.system('sleep 2')
+os.system('sleep 8')
 os.system('echo master; docker inspect -f "{{ .NetworkSettings.Networks.bridge.IPAddress }}" master')
 
 # Get the nodes IP
@@ -110,10 +103,10 @@ os.system('docker cp ansible.cfg master:/root')
 os.system('docker cp ansible_ping.yml master:/root')
 
 # Create keys on nodes
-os.system('''docker exec -it master bash -c "mkdir -p /root/.ssh; chmod 0700 /root/.ssh; ls -la /root/.ssh"''')
+os.system('''docker exec -it master bash -c "mkdir -p /root/.ssh; chmod 0700 /root/.ssh"''')
 os.system('''docker exec -it master bash -c "rm -f /root/.ssh/id_rsa; ssh-keygen -t rsa -qN '' -f /root/.ssh/id_rsa"''')
 os.system('''docker exec -it master bash -c "echo 'StrictHostKeyChecking no' >> ~/.ssh/config; chmod 600 /root/.ssh/config"''')
-os.system('''docker exec -it master bash -c "for i in $(cat hosts | cut -d= -f2); do sshpass -p '1234' ssh-copy-id -i ~/.ssh/id_rsa.pub $i; done"''')
+os.system('''docker exec -it master bash -c "for i in $(< hosts | cut -d= -f2); do sshpass -p '1234' ssh-copy-id -i ~/.ssh/id_rsa.pub $i; done"''')
 
 # Show the created images and the running containers
-os.system('docker images; docker ps -a')
+os.system('echo; docker images; echo; docker ps -a; echo')
